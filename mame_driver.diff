@@ -1,0 +1,132 @@
+diff --git a/src/mame/drivers/shangha3.cpp b/src/mame/drivers/shangha3.cpp
+index d59b2bb27b..9bb9f62c51 100644
+--- a/src/mame/drivers/shangha3.cpp
++++ b/src/mame/drivers/shangha3.cpp
+@@ -89,6 +89,13 @@ WRITE8_MEMBER(shangha3_state::heberpop_coinctrl_w)
+ 	machine().bookkeeping().coin_counter_w(1,data & 0x02);
+ }
+ 
++READ16_MEMBER(shangha3_state::sun06multi_okibank_r)
++{
++	logerror("PC %06x: bank %08x\n", m_maincpu->pc(), offset);
++	m_okibank->set_entry(offset & 3);
++	return 0;
++}
++
+ WRITE8_MEMBER(shangha3_state::blocken_coinctrl_w)
+ {
+ 	/* the sound ROM bank is selected by the main CPU! */
+@@ -142,6 +149,24 @@ void shangha3_state::heberpop_map(address_map &map)
+ 	map(0x800000, 0xb7ffff).rom().region("gfx1", 0);
+ }
+ 
++void shangha3_state::sun06multi_map(address_map &map)
++{
++	map(0x000000, 0x07ffff).rom();
++	map(0x080000, 0x0fffff).r(FUNC(shangha3_state::sun06multi_okibank_r));
++	map(0x100000, 0x100fff).ram().w(m_palette, FUNC(palette_device::write16)).share("palette");
++	map(0x200000, 0x200001).portr("INPUTS");
++	map(0x200002, 0x200003).portr("SYSTEM").nopw();
++	map(0x200004, 0x200005).portr("DSW");
++	map(0x200008, 0x200009).w(FUNC(shangha3_state::blitter_go_w));
++	map(0x20000a, 0x20000b).w(FUNC(shangha3_state::irq_ack_w)).nopr();
++	map(0x20000d, 0x20000d).w(FUNC(shangha3_state::heberpop_coinctrl_w));
++	map(0x20000f, 0x20000f).w(m_soundlatch, FUNC(generic_latch_8_device::write));
++	map(0x300000, 0x30ffff).ram().share("ram"); /* gfx & work ram */
++	map(0x340001, 0x340001).w(FUNC(shangha3_state::flipscreen_w));
++	map(0x360000, 0x360001).w(FUNC(shangha3_state::gfxlist_addr_w));
++	map(0x800000, 0xb7ffff).rom().region("gfx1", 0);
++}
++
+ void shangha3_state::blocken_map(address_map &map)
+ {
+ 	map(0x000000, 0x0fffff).rom();
+@@ -525,6 +550,14 @@ MACHINE_CONFIG_START(shangha3_state::heberpop)
+ 	MCFG_SOUND_ROUTE(ALL_OUTPUTS, "mono", 1.0)
+ MACHINE_CONFIG_END
+ 
++MACHINE_CONFIG_START(shangha3_state::sun06multi)
++	heberpop(config);
++	MCFG_DEVICE_MODIFY("maincpu")
++	MCFG_DEVICE_PROGRAM_MAP(sun06multi_map)
++
++	MCFG_DEVICE_MODIFY("oki")
++	MCFG_DEVICE_ADDRESS_MAP(0, blocken_oki_map)
++MACHINE_CONFIG_END
+ 
+ MACHINE_CONFIG_START(shangha3_state::blocken)
+ 
+@@ -697,6 +730,27 @@ ROM_START( heberpop ) /* PCB labeled SUN-06 */
+ 	ROM_LOAD( "hbp_ic53_v1.0.ic53",  0x0000, 0x80000, CRC(a4483aa0) SHA1(be301d8ac6d69f5c3fdbcb85bd557090e46da1ff) )
+ ROM_END
+ 
++ROM_START( sun06multi ) /* PCB labeled SUN-06 */
++	ROM_REGION( 0x100000, "maincpu", 0 )
++	ROM_LOAD16_BYTE( "ic31.bin",  0x0000, 0x80000, CRC(c430d264) SHA1(4be12b1fa90da09047db3a31171ffda8ab8bd851) )
++	ROM_LOAD16_BYTE( "ic32.bin",  0x0001, 0x80000, CRC(bfa555a8) SHA1(754f581554022b98ba8e78ee96f846faa2cedc69) )
++
++	ROM_REGION( 0x10000, "audiocpu", 0 )
++	ROM_LOAD( "ic34.bin",  0x0000, 0x10000, CRC(0cf056c6) SHA1(9992cd3879d9a57fcb784fc1e11d6b6d87e5a366) )
++
++	ROM_REGION( 0x380000, "gfx1", ROMREGION_ERASEFF )
++	ROM_LOAD( "ic98.bin",   0x000000, 0x80000, CRC(a599100a) SHA1(f2e517256a42b3fa4a047bbe742d714f568cc117) )
++	ROM_LOAD( "ic99.bin",   0x080000, 0x80000, CRC(fb8bb12f) SHA1(78c1fec1371d312e113d92803dd59acc36604989) )
++	ROM_LOAD( "ic100.bin", 0x100000, 0x80000, CRC(05a0f765) SHA1(4f44cf367c3697eb6c245297c9d05160d7d94e24) )
++	ROM_LOAD( "ic101.bin", 0x180000, 0x80000, CRC(151ba025) SHA1(b6ebe60872957a2625e666d53a5a4bc941a1f21c) )
++	ROM_LOAD( "ic102.bin", 0x200000, 0x80000, CRC(2b5e341a) SHA1(c7ad2dafb3433296c117978434e1699290267891) )
++	ROM_LOAD( "ic103.bin", 0x280000, 0x80000, CRC(efa0e745) SHA1(fc1d52d35b3c902d8b25403b0e13f86a04039bc4) )
++	ROM_LOAD( "ic104.bin", 0x300000, 0x80000, CRC(bb896bbb) SHA1(4311876628beb82cbacdab4d055c3738e74241b0) )
++
++	ROM_REGION( 0x80000, "oki", 0 ) /* samples for M6295 */
++	ROM_LOAD( "ic53.bin",  0x0000, 0x80000, CRC(a4483aa0) SHA1(be301d8ac6d69f5c3fdbcb85bd557090e46da1ff) )
++ROM_END
++
+ ROM_START( blocken ) /* PCB labeled KID-07 */
+ 	ROM_REGION( 0x100000, "maincpu", ROMREGION_ERASEFF )
+ 	ROM_LOAD16_BYTE( "ic31j.bin",    0x0000, 0x20000, CRC(ec8de2a3) SHA1(09a6b8c1b656b17ab3d1fc057902487e4f94cf02) )
+@@ -739,9 +793,10 @@ void shangha3_state::init_blocken()
+ 	m_okibank->configure_entries(0, 4, memregion("oki")->base(), 0x20000);
+ }
+ 
+-GAME( 1993, shangha3,   0,        shangha3, shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (World)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1993, shangha3u,  shangha3, shangha3, shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (US)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1993, shangha3up, shangha3, shangha3, shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (US, prototype)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1993, shangha3j,  shangha3, shangha3, shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (Japan)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, heberpop,   0,        heberpop, heberpop, shangha3_state, init_heberpop, ROT0, "Sunsoft / Atlus", "Hebereke no Popoon (Japan)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, blocken,    0,        blocken,  blocken,  shangha3_state, init_blocken,  ROT0, "Visco / KID", "Blocken (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE )
++GAME( 1993, shangha3,   0,        shangha3,   shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (World)", MACHINE_SUPPORTS_SAVE )
++GAME( 1993, shangha3u,  shangha3, shangha3,   shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (US)", MACHINE_SUPPORTS_SAVE )
++GAME( 1993, shangha3up, shangha3, shangha3,   shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (US, prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1993, shangha3j,  shangha3, shangha3,   shangha3, shangha3_state, init_shangha3, ROT0, "Sunsoft", "Shanghai III (Japan)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, heberpop,   0,        heberpop,   heberpop, shangha3_state, init_heberpop, ROT0, "Sunsoft / Atlus", "Hebereke no Popoon (Japan)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, sun06multi, 0,        sun06multi, heberpop, shangha3_state, init_blocken,  ROT0, "sun06multi", "sun06multi", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, blocken,    0,        blocken,    blocken,  shangha3_state, init_blocken,  ROT0, "Visco / KID", "Blocken (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE )
+diff --git a/src/mame/includes/shangha3.h b/src/mame/includes/shangha3.h
+index 0fa2254c78..dd6b2037ec 100644
+--- a/src/mame/includes/shangha3.h
++++ b/src/mame/includes/shangha3.h
+@@ -24,6 +24,7 @@ public:
+ 
+ 	void shangha3(machine_config &config);
+ 	void heberpop(machine_config &config);
++	void sun06multi(machine_config &config);
+ 	void blocken(machine_config &config);
+ 
+ 	void init_shangha3();
+@@ -65,6 +66,9 @@ private:
+ 	// heberpop specific
+ 	DECLARE_WRITE8_MEMBER(heberpop_coinctrl_w);
+ 
++        // sun06multi specific
++	DECLARE_READ16_MEMBER(sun06multi_okibank_r);
++
+ 	// blocken specific
+ 	DECLARE_WRITE8_MEMBER(blocken_coinctrl_w);
+ 
+@@ -77,5 +81,6 @@ private:
+ 	void heberpop_map(address_map &map);
+ 	void heberpop_sound_io_map(address_map &map);
+ 	void heberpop_sound_map(address_map &map);
++	void sun06multi_map(address_map &map);
+ 	void shangha3_map(address_map &map);
+ };
