@@ -1,0 +1,25 @@
+Name     SUN06MULTI;
+PartNo   PAL_CE;
+Date     2019/01/15;
+Revision 01;
+Designer Yukari;
+Company  None;
+Assembly None;
+Location None;
+Device   G22V10;
+
+/* Inputs */
+Pin [2..5] = [nOE0..3];
+Pin [6..7] = [DIP0..1];
+
+/* Outputs */
+Pin [18..19] = [OutA20..19];
+Pin [20..22] = [OutnG2..0];
+
+/* Equations */
+OutnG0 = (nOE0 & nOE1 & nOE2 & nOE3) # DIP0 # DIP1;   /* 00: Hebereke no Popoon */
+OutnG1 = (nOE0 & nOE1 & nOE2 & nOE3) # DIP0 # !DIP1;  /* 01: Blocken */
+OutnG2 = (nOE0 & nOE1 & nOE2 & nOE3) # !DIP0;         /* 1*: Shanghai III */
+
+OutA19 = nOE0 & nOE2;
+OutA20 = nOE0 & nOE1;

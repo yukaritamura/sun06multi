@@ -1,0 +1,48 @@
+Name     SUN06MULTI_SND;
+PartNo   PAL_CE;
+Date     2019/01/15;
+Revision 01;
+Designer Yukari;
+Company  None;
+Assembly None;
+Location None;
+Device   G22V10;
+
+/* Inputs */
+Pin 1 = CLK;
+Pin 2 = nOE;
+Pin 3 = nCE;
+Pin 4 = A18;
+Pin 5 = A1;
+Pin 6 = A0;
+Pin 7 = SIN17;
+Pin 8 = SIN18;
+Pin 9 = DIP0;
+Pin 10 = DIP1;
+
+/* Outputs */
+Pin 14 = SOUT17;
+Pin 15 = SOUT18;
+Pin 23 = CLKOUT;
+
+/* Wire */
+Pin 16 = BankSel;
+Pin 17 = Blocken;
+Pin 18 = Bank0;
+Pin 19 = Bank1;
+
+/* Equations */
+CLKOUT = !nOE;
+
+BankSel = A18;
+Blocken = !DIP0 & DIP1;
+
+Bank0.d = (BankSel & A0) # (!BankSel & Bank0);
+Bank0.ar = 'h'00;
+Bank0.sp = 'h'00;
+Bank1.d = (BankSel & A1) # (!BankSel & Bank1);
+Bank1.ar = 'h'00;
+Bank1.sp = 'h'00;
+
+SOUT17 = (!Blocken & SIN17) # (Blocken & SIN17 & Bank0);
+SOUT18 = (!Blocken & SIN18) # (Blocken & SIN17 & Bank1);
